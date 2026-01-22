@@ -317,49 +317,14 @@ function getColor(d) {
     return colors[Math.abs(hash) % colors.length];
 }
 
-// 1. Paleta de cores vibrantes (estilo Cyberpunk/Neon)
-function getNeonColor(d) {
-    const colors = [
-        '#00f2ff', // Cyan Neon
-        '#00ff9f', // Verde Primavera
-        '#bc13fe', // Roxo Elétrico
-        '#ff0055', // Rosa Choque
-        '#ffee00', // Amarelo Vivo
-        '#7df9ff', // Azul Elétrico
-        '#ff6700', // Laranja Neon
-        '#ff00ff'  // Magenta
-    ];
-    
-    let hash = 0;
-    for (let i = 0; i < d.length; i++) {
-        hash = d.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-}
-
-// Paleta de cores vibrantes
-function getNeonColor(d) {
-    const colors = [
-        '#00f2ff', '#00ff9f', '#bc13fe', '#ff0055', 
-        '#ffee00', '#7df9ff', '#ff6700', '#ff00ff'
-    ];
-    
-    let hash = 0;
-    for (let i = 0; i < d.length; i++) {
-        hash = d.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-}
-
-
-// 1. Paleta de cores de alto contraste (excluindo tons de trânsito como verde/amarelo/vermelho)
+// 1. Paleta de alto contraste (sem verdes, amarelos ou vermelhos)
 const highContrastPalette = [
     '#00f2ff', // Cyan Neon
     '#bc13fe', // Roxo Elétrico
-    '#0066ff', // Azul Vibrante
+    '#3b82f6', // Azul Brilhante
     '#ff00ff', // Magenta
-    '#4d4dff', // Azul Neon Profundo
-    '#9d00ff'  // Violeta Intenso
+    '#4f46e5', // Índigo
+    '#a855f7'  // Violeta
 ];
 
 async function addFreguesias() {
@@ -368,29 +333,27 @@ async function addFreguesias() {
         if (!response.ok) return;
         const data = await response.json();
 
-        // Variável para saltar cores na paleta
         let colorIndex = 0;
 
         L.geoJSON(data, {
             style: function(feature) {
-                // Seleciona a cor e salta 2 posições para garantir que vizinhos sejam diferentes
-                const color = highContrastPalette[colorIndex % highContrastPalette.length];
+                // Salta 2 cores para garantir que vizinhos no arquivo fiquem diferentes
+                const fillColor = highContrastPalette[colorIndex % highContrastPalette.length];
                 colorIndex += 2; 
 
                 return {
-                    // CONTORNO MAIS FORTE
+                    // CONTORNO ÚNICO PARA TODAS
                     stroke: true,
-                    color: color,       // A borda agora tem a mesma cor do preenchimento para reforçar a área
-                    weight: 3,          // Aumentado para destacar bem os limites
-                    opacity: 0.3,       // Mais visível que antes, mas ainda translúcido
+                    color: "#ffffff",   // Cor única (Branco/Prata)
+                    weight: 2,          // Espessura média para definição clara
+                    opacity: 0.2,       // Bem translúcido para ser discreto
 
-                    // PREENCHIMENTO
-                    fillColor: color,
-                    fillOpacity: 0.12,  // Mantém a transparência para ver as estradas
+                    // PREENCHIMENTO COLORIDO
+                    fillColor: fillColor,
+                    fillOpacity: 0.12,  // Suave para não esconder as estradas
                     interactive: false
                 };
             }
-            // Removido o onEachFeature que criava os nomes
         }).addTo(map);
     } catch (e) {
         console.error("Erro ao carregar freguesias:", e);
