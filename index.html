@@ -317,6 +317,26 @@ function getColor(d) {
     return colors[Math.abs(hash) % colors.length];
 }
 
+// 1. Paleta de cores vibrantes (estilo Cyberpunk/Neon)
+function getNeonColor(d) {
+    const colors = [
+        '#00f2ff', // Cyan Neon
+        '#00ff9f', // Verde Primavera
+        '#bc13fe', // Roxo Elétrico
+        '#ff0055', // Rosa Choque
+        '#ffee00', // Amarelo Vivo
+        '#7df9ff', // Azul Elétrico
+        '#ff6700', // Laranja Neon
+        '#ff00ff'  // Magenta
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < d.length; i++) {
+        hash = d.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+}
+
 async function addFreguesias() {
     try {
         const response = await fetch('freguesias_leiria.geojson');
@@ -325,16 +345,19 @@ async function addFreguesias() {
 
         L.geoJSON(data, {
             style: function(feature) {
-                // 'freguesia' deve ser o nome da propriedade no seu GeoJSON
-                // Se o campo tiver outro nome (ex: 'NM_FREGUE'), mude aqui:
-                const name = feature.properties.freguesia || feature.properties.name || "";
+                const name = feature.properties.freguesia || feature.properties.name || "default";
+                const vibrantColor = getNeonColor(name);
                 
                 return {
-                    color: "#3b82f6",      // Cor da linha de contorno
-                    weight: 1,             // Espessura da linha
-                    opacity: 0.3,          // Transparência da linha
-                    fillColor: getColor(name), // Cor dinâmica baseada no nome
-                    fillOpacity: 0.15,     // Preenchimento leve para não tapar o trânsito
+                    // Contorno da freguesia
+                    color: vibrantColor, 
+                    weight: 2,          // Linha ligeiramente mais grossa para destacar
+                    opacity: 0.5,       // Transparência média na linha
+                    
+                    // Preenchimento
+                    fillColor: vibrantColor,
+                    fillOpacity: 0.12,  // Valor baixo: cores "saltam" mas as estradas continuam visíveis
+                    
                     interactive: false     
                 };
             }
@@ -342,8 +365,7 @@ async function addFreguesias() {
     } catch (e) {
         console.error("Erro ao carregar freguesias:", e);
     }
-}
-    function addFireStations() {
+}    function addFireStations() {
         const cbs = [
             { code: "BSL", lat: 39.741155, lng: -8.800315 },
             { code: "BVM", lat: 39.685008, lng: -8.887350 },
