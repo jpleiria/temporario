@@ -351,26 +351,39 @@ function getNeonColor(d) {
     return colors[Math.abs(hash) % colors.length];
 }
 
+// 1. Paleta de cores com alto contraste (Cores Neon/Cyberpunk)
+const neonPalette = [
+    '#00f2ff', // Cyan (Celeste)
+    '#bc13fe', // Roxo Elétrico
+    '#00ff9f', // Verde Primavera (Neon)
+    '#ff0055', // Rosa Choque
+    '#ffee00', // Amarelo
+    '#3b82f6', // Azul Brilhante
+    '#ff6700', // Laranja Vivo
+    '#ff00ff'  // Magenta
+];
+
 async function addFreguesias() {
     try {
         const response = await fetch('freguesias_leiria.geojson');
         if (!response.ok) return;
         const data = await response.json();
 
+        // Usamos um contador para alternar as cores da paleta de forma saltada
+        let colorIndex = 0;
+
         L.geoJSON(data, {
             style: function(feature) {
-                const name = feature.properties.freguesia || feature.properties.name || "default";
-                const vibrantColor = getNeonColor(name);
-                
+                // Seleciona a cor e avança 3 posições na paleta para garantir contraste
+                // O operador % (módulo) faz com que volte ao início da lista
+                const color = neonPalette[colorIndex % neonPalette.length];
+                colorIndex += 3; 
+
                 return {
-                    // LINHAS DE LIMITE
-                    stroke: false,      // Desativa completamente as linhas de contorno
-                    
-                    // PREENCHIMENTO
-                    fillColor: vibrantColor,
-                    fillOpacity: 0.15,  // Opacidade levemente aumentada para compensar a falta de linhas
-                    
-                    interactive: false     
+                    stroke: false,      // Remove as linhas de limite
+                    fillColor: color,   // Aplica a cor vibrante
+                    fillOpacity: 0.12,  // Transparência para ver as estradas
+                    interactive: false
                 };
             }
         }).addTo(map);
