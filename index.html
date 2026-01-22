@@ -318,12 +318,38 @@ function getColor(d) {
 }
 
 
-// 1. Paleta de alto contraste expandida (24 tons exclusivos para freguesias)
+// 1. Paleta de ultra-contraste (30 tons) - Alternância radical de cores frias
 const highContrastPalette = [
-    '#00f2ff', '#bc13fe', '#3b82f6', '#ff00ff', '#1e40af', '#a855f7',
-    '#0ea5e9', '#6366f1', '#d946ef', '#06b6d4', '#4338ca', '#7e22ce',
-    '#2563eb', '#c026d3', '#7c3aed', '#0284c7', '#4f46e5', '#9333ea',
-    '#0891b2', '#312e81', '#581c87', '#1d4ed8', '#a21caf', '#6d28d9'
+    '#00f2ff', // Ciano
+    '#bc13fe', // Roxo
+    '#3b82f6', // Azul
+    '#ff00ff', // Magenta
+    '#06b6d4', // Turquesa Escuro
+    '#a855f7', // Violeta
+    '#1e40af', // Marinho
+    '#d946ef', // Rosa Choque
+    '#0ea5e9', // Azul Céu
+    '#6366f1', // Índigo
+    '#c026d3', // Fúcsia
+    '#0284c7', // Azul Oceano
+    '#7e22ce', // Roxo Profundo
+    '#0891b2', // Azul Petróleo
+    '#4f46e5', // Azul Elétrico
+    '#9333ea', // Púrpura Real
+    '#2563eb', // Azul Puro
+    '#a21caf', // Magenta Escuro
+    '#065f46', // Verde Água Escuro (sem ser Verde Trânsito)
+    '#312e81', // Azul Noite
+    '#6d28d9', // Violeta Vivo
+    '#0369a1', // Azul Lápis
+    '#be185d', // Rosa Profundo
+    '#1d4ed8', // Azul Brilhante
+    '#7c3aed', // Roxo Suave
+    '#0c4a6e', // Azul Cobalto
+    '#db2777', // Rosa
+    '#4338ca', // Azul Ardósia
+    '#8b5cf6', // Lavanda
+    '#155e75'  // Azul Cinza
 ];
 
 async function addFreguesias() {
@@ -332,12 +358,13 @@ async function addFreguesias() {
         if (!response.ok) return;
         const data = await response.json();
 
-        // Função de hash para garantir que o mesmo nome tenha sempre a mesma cor
+        // Função de hash com dispersão aumentada para evitar vizinhos parecidos
         const getHash = (str) => {
             let hash = 0;
+            str = str + str.charAt(0); // Adiciona um "salt" para mudar o resultado
             for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0; // Converte para inteiro de 32 bits
+                hash = ((hash << 7) - hash) + str.charCodeAt(i);
+                hash |= 0;
             }
             return Math.abs(hash);
         };
@@ -346,20 +373,18 @@ async function addFreguesias() {
             style: function(feature) {
                 const name = feature.properties.freguesia || feature.properties.name || "default";
                 
-                // O multiplicador 13 "espalha" os vizinhos pela paleta de 24 cores
-                const colorIdx = (getHash(name) * 13) % highContrastPalette.length;
+                // O multiplicador 17 garante saltos bruscos na paleta de 30 cores
+                const colorIdx = (getHash(name) * 17) % highContrastPalette.length;
                 const fillColor = highContrastPalette[colorIdx];
 
                 return {
-                    // CONTORNO ÚNICO
                     stroke: true,
-                    color: "#1743FF",   // Azul de destaque para os limites
+                    color: "#1743FF",   
                     weight: 2,          
                     opacity: 0.3,       
 
-                    // PREENCHIMENTO DINÂMICO
                     fillColor: fillColor,
-                    fillOpacity: 0.15,  // Transparência ideal para ver as estradas
+                    fillOpacity: 0.15,  // Transparência equilibrada
                     interactive: false
                 };
             }
