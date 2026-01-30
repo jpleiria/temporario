@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Operacional - CBSL</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-primary: #3b82f6;
+            --accent-radio: #facc15;
+            --accent-danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        /* Reset e Base Responsiva */
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: -webkit-fill-available;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--card-bg);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            min-height: 70px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+
+        .logos img { 
+            height: clamp(40px, 6vh, 60px); 
+            width: auto; 
+        }
+
+        .header-left h2 {
+            font-size: clamp(0.9rem, 2vw, 1.6rem) !important; 
+            color: var(--text-dim);
+            margin: 0;
+        }
+
+        .clock-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            gap: 15px;
+        }
+
+        #clock-date { font-size: 1rem; color: var(--text-dim); text-transform: capitalize; font-weight: 500; }
+        #clock-time { font-size: 1.8rem; color: #ffffff; font-weight: 800; font-family: 'Courier New', monospace; }
+
+        /* Layout Principal */
+        .dashboard-container { 
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 10px;
+            padding: 10px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Painel de Controlos */
+        .controls-panel { 
+            background: var(--card-bg); 
+            padding: 12px; 
+            border-radius: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+        }
+        
+        .category-group {
+            background: rgba(255, 255, 255, 0.02); padding: 8px; border-radius: 8px;
+            border: 1px solid #334155; margin-bottom: 4px;
+        }
+
+        .category-title { color: var(--accent-primary); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; font-weight: bold; display: block; }
+
+        .inline-volume { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .volume-slider { flex: 1; cursor: pointer; height: 6px; accent-color: var(--accent-primary); }
+        .volume-pct { font-size: 0.75rem; min-width: 35px; text-align: right; }
+
+        .button-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); 
+            gap: 8px; 
+        }
+        
+        .btn-audio { 
+            background: #334155; 
+            border: 1px solid #475569; 
+            color: white; 
+            padding: 10px 4px;
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.8rem;
+            font-weight: 800;
+            min-height: 80px; 
+            transition: all 0.2s;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .btn-mute-all { width: 100%; background: var(--accent-danger); color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 800; cursor: pointer; margin-bottom: 5px; }
+        .is-playing { animation: pulse-alert 0.8s infinite !important; border: 2px solid white !important; }
+
+        @keyframes pulse-alert {
+            0% { background-color: var(--accent-danger); }
+            50% { background-color: #b91c1c; }
+            100% { background-color: var(--accent-danger); }
+        }
+
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; 
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .top-priority-apps {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px;
+            min-height: 350px;
+            flex-shrink: 0;
+        }
+
+        .app-container-full {
+            background: #000; border-radius: 8px; overflow: hidden; border: 2px solid #334155; height: 100%; position: relative;
+        }
+
+        #card-shelly iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            display: block; 
+            background: white; 
+        }
+
+        #card-escala iframe { width: 100%; height: 100%; border: none; display: block; background: white; }
+
+        #shelly-credentials {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.98);
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-radio);
+            z-index: 5002;
+            flex-direction: column;
+            gap: 8px;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        #card-shelly.maximized #shelly-credentials { display: flex; }
+
+        .cred-row { display: flex; align-items: center; gap: 8px; background: #000; padding: 6px 10px; border-radius: 4px; border: 1px solid #334155; }
+        .cred-row input { background: transparent; border: none; color: white; font-family: monospace; font-size: 0.85rem; width: 100%; outline: none; }
+        .copy-btn { background: var(--accent-primary); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold; white-space: nowrap; }
+
+        .info-estatica-container {
+            background: var(--card-bg);
+            border: 2px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            min-height: 120px;
+            max-height: 250px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .bottom-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .cards-grid-3x3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .notes-container {
+            background: #e2e8f0; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; border: 2px solid #334155;
+            min-height: 200px;
+        }
+
+        .notes-toolbar {
+            background: #1e293b;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-bottom: 2px solid #334155;
+        }
+
+        .toolbar-btn { 
+            background: #334155; border: 1px solid #475569; color: white; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; 
+        }
+        .toolbar-btn.btn-delete { background: var(--accent-danger); margin-left: auto; font-weight: bold; }
+        .toolbar-btn.active { background: var(--accent-primary); }
+
+        #editor { flex: 1; padding: 12px; background: white; color: #1e293b; overflow-y: auto; outline: none; font-size: 1.2rem; }
+
+        .app-card { 
+            background: var(--card-bg); border-radius: 8px; overflow: hidden; position: relative; 
+            border: 2px solid #334155; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+            text-align: center; min-height: 90px;
+        }
+        .app-card .app-icon { font-size: 1.4rem; }
+        .app-card .app-desc { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; margin-top: 5px; line-height: 1.1; padding: 0 5px; }
+        .app-card iframe { display: none; }
+
+        /* Maximizado */
+        .maximized { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 5000 !important; border-radius: 0 !important; border: none !important; background: black !important; }
+        .maximized iframe { display: block !important; width: 100% !important; height: 100% !important; border: none; transform: none !important; }
+        
+        .close-btn-max { 
+            display: none; position: absolute; top: 15px; right: 15px; background: var(--accent-danger); 
+            color: white; border: 2px solid white; border-radius: 8px; padding: 10px 20px; 
+            cursor: pointer; font-size: 0.9rem; font-weight: 800; z-index: 5001;
+        }
+        .maximized .close-btn-max { display: block; }
+
+        .resize-btn { position: absolute; top: 5px; right: 5px; background: rgba(15, 23, 42, 0.9); color: white; border: 1px solid var(--accent-primary); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.7rem; z-index: 50; }
+        #silence-timer { color: var(--accent-radio); font-weight: bold; font-size: 0.9rem; margin-right: 15px; }
+
+        /* ======================================================
+           MEDIA QUERIES (ADAPTAÇÃO RESPONSIVA)
+           ====================================================== */
+
+        @media (max-width: 1100px) {
+            .dashboard-container { grid-template-columns: 300px 1fr; }
+            #clock-date { display: none; }
+        }
+
+        @media (max-width: 850px) {
+            body { overflow-y: auto; }
+            .dashboard-container { 
+                grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column;
+                overflow-y: visible;
+            }
+            .controls-panel { height: auto; max-height: none; }
+            .top-priority-apps { grid-template-columns: 1fr; height: auto; min-height: 0; }
+            .top-priority-apps > div { min-height: 400px; }
+            .bottom-split { grid-template-columns: 1fr; }
+            header { justify-content: center; height: auto; padding: 10px; }
+            .header-left { flex-direction: column; text-align: center; gap: 5px; }
+        }
+
+        @media (max-width: 480px) {
+            .button-grid { grid-template-columns: repeat(2, 1fr); }
+            .cards-grid-3x3 { grid-template-columns: repeat(2, 1fr); }
+            #clock-time { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body onclick="iniciarAudioContext()">
+
+<header>
+    <div class="header-left">
+        <div class="logos"><img src="logo.png" alt="Bombeiros"></div>
+        <h2>DASHBOARD OPERACIONAL - CBSL</h2>
+    </div>
+    <div id="alerta-troca-turno" style="display: none; color: var(--accent-radio); font-weight: 800; font-size: 1.4rem; animation: pulse-alert 1s infinite; background: rgba(250, 204, 21, 0.1); padding: 5px 15px; border-radius: 4px; border: 1px solid var(--accent-radio); text-align: center;">
+        ⚠️ TROCA DE TURNO ⚠️
+    </div>
+    <div style="display: flex; align-items: center;">
+        <div id="silence-timer"></div>
+        <div class="clock-container"><span id="clock-date"></span><span id="clock-time"></span></div>
+    </div>
+</header>
+
+<div class="dashboard-container">
+    <aside class="controls-panel">
+        <button class="btn-mute-all" onclick="stopAllAudios()">SILENCIAR TUDO</button>
+        <div class="category-group">
+            <span class="category-title">🚨 Operacional</span>
+            <div class="inline-volume">
+                <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" oninput="updateSectionVolume('op', this.value)">
+                <span class="volume-pct" id="txt-vol-op">100%</span>
+            </div>
+            <div class="button-grid" id="grid-operacional"></div>
+        </div>
+        <div class="category-group">
+            <span class="category-title">Apoio</span>
+            <div class="inline-volume">
+                <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="1" oninput="updateSectionVolume('ap', this.value)">
+                <span class="volume-pct" id="txt-vol-ap">100%</span>
+            </div>
+            <div class="button-grid" id="grid-apoio"></div>
+        </div>
+        <div class="category-group">
+            <span class="category-title">📻 Rádios</span>
+            <div class="inline-volume">
+                <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateSectionVolume('radio', this.value)">
+                <span class="volume-pct" id="txt-vol-radio">50%</span>
+            </div>
+            <div class="button-grid">
+                <button class="btn-audio" id="btn-comercial" onclick="toggleRadio('comercial', 'https://stream-icy.bauermedia.pt/comercial.aac')">COMERCIAL</button>
+                <button class="btn-audio" id="btn-rfm" onclick="toggleRadio('rfm', 'https://playerservices.streamtheworld.com/api/livestream-redirect/RFM_SC')">RFM</button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-layout">
+        <section class="top-priority-apps">
+            <div class="app-container-full" id="card-shelly" onclick="handleCardClick(event, 'card-shelly')">
+                <button class="resize-btn">ABRIR</button>
+                <button class="close-btn-max" onclick="toggleMaximize('card-shelly', event)">VOLTAR</button>
+                
+                <div id="shelly-credentials" onclick="event.stopPropagation()">
+                    <div class="cred-row">
+                        <input type="text" value="operadorbmlcmos@gmail.com" id="sh-e" readonly>
+                        <button class="copy-btn" onclick="copyText('sh-e')">COPIAR EMAIL</button>
+                    </div>
+                    <div class="cred-row">
+                        <input type="text" value="opBMLcmos1002" id="sh-p" readonly>
+                        <button class="copy-btn" onclick="copyText('sh-p')">COPIAR PASS</button>
+                    </div>
+                </div>
+                <iframe src="https://control.shelly.cloud/#/dash/-1"></iframe>
+            </div>
+
+            <div class="app-container-full" id="card-escala" onclick="handleCardClick(event, 'card-escala')">
+                <button class="close-btn-max" onclick="toggleMaximize('card-escala', event)">VOLTAR</button>
+                <iframe src="https://jpleiria.github.io/escala_servico/"></iframe>
+            </div>
+        </section>
+
+        <section class="info-estatica-container">
+            <span class="info-estatica-title" style="color:var(--accent-radio); font-weight:bold; font-size:0.75rem; border-bottom:1px solid #334155; display:block; margin-bottom:5px;">Informações / Avisos</span>
+            <div id="conteudo-estatico" class="info-estatica-content" style="font-size:1.1rem; color:var(--text-main); line-height:1.4;">
+                A carregar informações da Folha de Cálculo...
+            </div>
+        </section>
+
+        <div class="bottom-split">
+            <section class="cards-grid-3x3">
+                <div class="app-card" id="card-coord" onclick="toggleMaximize('card-coord')">
+                    <button class="close-btn-max">VOLTAR</button>
+                    <div class="app-icon">📍</div><div class="app-desc">CONVERSOR<br>COORDENADAS</div>
+                    <iframe data-src="https://jpleiria.github.io/conversor_coordenadas_siresp/"></iframe>
+                </div>
+                <div class="app-card" id="card-classif" onclick="toggleMaximize('card-classif')">
+                    <button class="close-btn-max">VOLTAR</button>
+                    <div class="app-icon">🔢</div><div class="app-desc">CLASSIFICAÇÃO<br>OCORRÊNCIAS</div>
+                    <iframe data-src="https://jpleiria.github.io/codigos_ocorrencias/"></iframe>
+                </div>
+                <div class="app-card" id="card-ppi" onclick="toggleMaximize('card-ppi')">
+                    <button class="close-btn-max">VOLTAR</button>
+                    <div class="app-icon">🛣️</div><div class="app-desc">PPI<br>AUTOESTRADAS</div>
+                    <iframe data-src="https://jpleiria.github.io/ppi_autoestradas/"></iframe>
+                </div>
+                <div class="app-card" id="card-transito" onclick="toggleMaximize('card-transito')">
+                    <button class="close-btn-max">VOLTAR</button>
+                    <div class="app-icon">🚗</div><div class="app-desc">TRÂNSITO<br>LIVE</div>
+                    <iframe data-src="https://jpleiria.github.io/transito_tempo_real/"></iframe>
+                </div>
+                <div class="app-card" id="card-blackline" onclick="toggleMaximize('card-blackline')">
+                    <button class="close-btn-max">VOLTAR</button>
+                    <div class="app-icon">🛡️</div><div class="app-desc">APARELHOS DETEÇÃO<br>MULTIGÁS</div>
+                    <iframe data-src="https://eu.live.blacklinesafety.com/sign-in"></iframe>
+                </div>
+                <div class="app-card" style="border-style: dashed; opacity: 0.3; cursor: default;">
+                    <div class="app-desc">LIVRE</div>
+                </div>
+            </section>
+
+            <section class="notes-container">
+                <div class="notes-toolbar">
+                    <button class="toolbar-btn" id="btn-bold" onclick="execCmd('bold')" style="width: 40px; font-size: 1rem;"><b>B</b></button>
+                    <input type="color" onchange="execCmd('foreColor', this.value)" title="Cor da Fonte" style="width:30px; height:24px; border:none; padding:0; background:none; cursor:pointer;">
+                    <button class="toolbar-btn btn-delete" onclick="clearNotes()">APAGAR TUDO</button>
+                </div>
+                <div id="editor" contenteditable="true" oninput="saveNotes()" onkeyup="updateToolbar()" onclick="updateToolbar()"></div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    const activeAudios = {};
+    let sectionVolumes = { op: 1.0, ap: 1.0, radio: 0.5 };
+    let lastActiveRadio = null; 
+    let countdownInterval = null;
+
+    async function carregarInfoGoogle() {
+        const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSxSKqdt8O2nHhGdhbPkoG4z9yNnNNAolaHAqGn3Vn4wdgICPEJ3PKTxY-Ra8mYahwSjKHGCfFVjcb/pub?gid=0&single=true&output=csv'; 
+        try {
+            const resposta = await fetch(url + '&t=' + new Date().getTime());
+            if (!resposta.ok) throw new Error('Falha na resposta');
+            const texto = await resposta.text();
+            const linhas = texto.split(/\r?\n/);
+            const htmlFinal = linhas
+                .map(linha => linha.replace(/^"|"$/g, '').trim()) 
+                .filter(linha => linha !== "")
+                .map(linha => `• ${linha}<br>`)
+                .join('');
+            document.getElementById('conteudo-estatico').innerHTML = htmlFinal || "Nenhuma informação/aviso disponível.";
+        } catch (erro) {
+            console.error("Erro ao carregar dados do Google:", erro);
+            document.getElementById('conteudo-estatico').innerHTML = "<span style='color:red;'>Erro ao carregar avisos da nuvem. Verifique a ligação.</span>";
+        }
+    }
+
+    function execCmd(c, v=null) { 
+        document.execCommand(c, false, v); 
+        updateToolbar(); 
+        saveNotes(); 
+    }
+
+    function updateToolbar() { const isBold = document.queryCommandState('bold'); document.getElementById('btn-bold').classList.toggle('active', isBold); }
+    function clearNotes() { if(confirm("Apagar todas as notas?")) { document.getElementById('editor').innerHTML = ""; saveNotes(); } }
+    function copyText(id) { const el = document.getElementById(id); el.select(); document.execCommand('copy'); const btn = el.nextElementSibling; btn.innerText = "COPIADO!"; btn.style.background = "#10b981"; setTimeout(() => { btn.innerText = "COPIAR"; btn.style.background = "var(--accent-primary)"; }, 2000); }
+    function handleCardClick(e, id) { const card = document.getElementById(id); if (!card.classList.contains('maximized')) toggleMaximize(id, e); }
+
+    function toggleMaximize(id, e) {
+        if(e) e.stopPropagation();
+        const card = document.getElementById(id);
+        const iframe = card.querySelector('iframe');
+        if (card.classList.contains('maximized')) {
+            card.classList.remove('maximized');
+        } else {
+            document.querySelectorAll('.app-card, .app-container-full').forEach(c => c.classList.remove('maximized'));
+            if(iframe && iframe.dataset.src) { iframe.src = iframe.dataset.src; delete iframe.dataset.src; }
+            card.classList.add('maximized');
+        }
+    }
+
+    const operacionais = [
+        { id: 'emergencia_medica', label: '*️⃣<br>EMERGÊNCIA MÉDICA' }, 
+        { id: 'acidente_viacao', label: '🚧<br>ACIDENTE' },
+        { id: 'incendio_urbano', label: '🚒<br>INCÊNDIO URBANO' }, 
+        { id: 'incendio_industrial', label: '🚒<br>INCÊNDIO INDUSTRIAL' },
+        { id: 'incendio_florestal', label: '🔥<br>INCÊNDIO FLORESTAL' }, 
+        { id: 'saída_anulada', label: '❌<br>SAÍDA ANULADA' }, 
+        { id: 'alerta', label: '🚨<br>ALERTA' }
+    ];
+    const apoios = [
+        { id: 'chefe', label: 'CHEFE SERVIÇO À CENTRAL' }, { id: 'rendição', label: 'RENDIÇÃO À CENTRAL' },
+        { id: 'logistica', label: 'LOGÍSTICA PRONTA' }, { id: 'parque_viaturas', label: 'TODOS OS ELEMENTOS AO PARQUE VIATURAS' }
+    ];
+
+    window.onload = () => {
+        operacionais.forEach(i => document.getElementById('grid-operacional').innerHTML += `<button class="btn-audio" id="btn-${i.id}" onclick="playAudio('${i.id}', 'op')">${i.label}</button>`);
+        apoios.forEach(i => document.getElementById('grid-apoio').innerHTML += `<button class="btn-audio" id="btn-${i.id}" onclick="playAudio('${i.id}', 'ap')">${i.label}</button>`);
+        updateClock(); setInterval(updateClock, 1000); loadNotes();
+        carregarInfoGoogle();
+        setInterval(carregarInfoGoogle, 300000); 
+    };
+
+    function playAudio(id, section) {
+        const btn = document.getElementById('btn-' + id);
+        
+        if (activeAudios[id]) { 
+            activeAudios[id].pause(); 
+            delete activeAudios[id]; 
+            btn.classList.remove('is-playing'); 
+            checkAndResumeRadio(); 
+            return; 
+        }
+
+        if (section === 'op' || section === 'ap') {
+            pauseCurrentRadios();
+            if (countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('silence-timer').innerText = "";
+        }
+
+        const agora = new Date();
+        const hora = agora.getHours();
+        
+        if (section === 'op' && (hora >= 0 && hora < 7)) {
+            const audioNoturno = new Audio('alerta_noturno.mp3');
+            audioNoturno.volume = sectionVolumes[section];
+            btn.classList.add('is-playing');
+            audioNoturno.play();
+            activeAudios['noturno_temp'] = audioNoturno;
+
+            audioNoturno.onended = () => {
+                delete activeAudios['noturno_temp'];
+                iniciarReproducaoReal(id, section, btn);
+            };
+        } else {
+            iniciarReproducaoReal(id, section, btn);
+        }
+    }
+
+    function iniciarReproducaoReal(id, section, btn) {
+        const audio = new Audio(id + '.mp3');
+        audio.volume = sectionVolumes[section];
+        if (!btn.classList.contains('is-playing')) btn.classList.add('is-playing');
+        audio.play();
+        activeAudios[id] = audio;
+
+        audio.onended = () => {
+            btn.classList.remove('is-playing');
+            delete activeAudios[id];
+            checkAndResumeRadio();
+        };
+    }
+
+    function pauseCurrentRadios() {
+        ['comercial', 'rfm'].forEach(radioId => {
+            if (activeAudios[radioId]) {
+                activeAudios[radioId].pause();
+                delete activeAudios[radioId];
+                document.getElementById('btn-' + radioId).style.background = "#334155";
+            }
+        });
+    }
+
+    function toggleRadio(id, url) {
+        const btn = document.getElementById('btn-' + id);
+        if (activeAudios[id]) {
+            activeAudios[id].pause();
+            delete activeAudios[id];
+            lastActiveRadio = null; 
+            btn.style.background = "#334155";
+        } else {
+            const outra = id === 'comercial' ? 'rfm' : 'comercial';
+            if (activeAudios[outra]) {
+                activeAudios[outra].pause();
+                delete activeAudios[outra];
+                document.getElementById('btn-' + outra).style.background = "#334155";
+            }
+            const audio = new Audio(url);
+            audio.volume = sectionVolumes.radio;
+            audio.play();
+            activeAudios[id] = audio;
+            lastActiveRadio = {id, url};
+            btn.style.background = "var(--accent-radio)";
+        }
+    }
+
+    function checkAndResumeRadio() {
+        const alertasAtivos = Object.keys(activeAudios).filter(k => k !== 'comercial' && k !== 'rfm');
+        if (alertasAtivos.length === 0 && lastActiveRadio) {
+            let timeLeft = 60;
+            if (countdownInterval) clearInterval(countdownInterval);
+            document.getElementById('silence-timer').innerText = `RÁDIO EM: ${timeLeft}s`;
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('silence-timer').innerText = `RÁDIO EM: ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('silence-timer').innerText = "";
+                    toggleRadio(lastActiveRadio.id, lastActiveRadio.url);
+                }
+            }, 1000);
+        }
+    }
+
+    function stopAllAudios() {
+        if (countdownInterval) clearInterval(countdownInterval);
+        document.getElementById('silence-timer').innerText = "";
+        document.getElementById('alerta-troca-turno').style.display = 'none';
+        Object.keys(activeAudios).forEach(id => {
+            activeAudios[id].pause();
+            delete activeAudios[id];
+        });
+        document.querySelectorAll('.btn-audio').forEach(b => {
+            b.classList.remove('is-playing');
+            if(b.id === 'btn-comercial' || b.id === 'btn-rfm') b.style.background = "#334155";
+        });
+        lastActiveRadio = null;
+    }
+
+    function updateSectionVolume(s, v) { 
+        sectionVolumes[s] = v; 
+        document.getElementById('txt-vol-'+s).innerText = Math.round(v*100)+'%';
+        if((s === 'radio') && activeAudios['comercial']) activeAudios['comercial'].volume = v;
+        if((s === 'radio') && activeAudios['rfm']) activeAudios['rfm'].volume = v;
+    }
+
+    function saveNotes() { localStorage.setItem('cbsl_notes_v', document.getElementById('editor').innerHTML); }
+    function loadNotes() { document.getElementById('editor').innerHTML = localStorage.getItem('cbsl_notes_v') || ''; }
+
+    let tocandoTrocaTurno = false;
+    function verificarTrocaTurno(horas, minutos, segundos) {
+        const horarioMatinal = (horas === 8 && minutos === 0 && segundos === 0);
+        const horarioNoturno = (horas === 20 && minutos === 0 && segundos === 0);
+        if ((horarioMatinal || horarioNoturno) && !tocandoTrocaTurno) {
+            tocarAudioTrocaTurno();
+            tocandoTrocaTurno = true;
+            setTimeout(() => { tocandoTrocaTurno = false; }, 2000);
+        }
+    }
+
+    function tocarAudioTrocaTurno() {
+        pauseCurrentRadios();
+        if (countdownInterval) clearInterval(countdownInterval);
+        document.getElementById('silence-timer').innerText = "";
+        const visualAlert = document.getElementById('alerta-troca-turno');
+        if (visualAlert) visualAlert.style.display = 'block';
+        const audio = new Audio('troca_turno.mp3');
+        audio.volume = sectionVolumes.ap;
+        activeAudios['troca_turno'] = audio; 
+        audio.play().catch(e => console.error("Erro ao tocar áudio: ", e));
+        audio.onended = () => {
+            if (visualAlert) visualAlert.style.display = 'none';
+            delete activeAudios['troca_turno'];
+            checkAndResumeRadio();
+        };
+    }    
+
+    function updateClock() {
+        const d = new Date();
+        const h = d.getHours();
+        const m = d.getMinutes();
+        const s = d.getSeconds();
+        verificarTrocaTurno(h, m, s);
+        const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        let dateStr = d.toLocaleDateString('pt-PT', optionsDate);
+        dateStr = dateStr.replace(/ de /g, ' ');
+        document.getElementById('clock-date').innerText = dateStr;
+        document.getElementById('clock-time').innerText = d.toLocaleTimeString('pt-PT', {hour12:false});
+    }
+
+    function iniciarAudioContext() {}
+</script>
+</body>
+</html>
